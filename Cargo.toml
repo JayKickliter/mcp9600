@@ -8,8 +8,6 @@ license = "MIT"
 keywords = ["thermocouple","I2C","embedded"]
 categories = ["embedded"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 embedded-hal = "0.2.7"
-bitvec = "~1.0"
+bitvec = { version = "1", default-features = false }

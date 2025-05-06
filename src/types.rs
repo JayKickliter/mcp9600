@@ -1,4 +1,4 @@
-use bitvec::prelude::*;
+use bitvec::{order::Lsb0, view::BitView};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Temperature(pub f32);
