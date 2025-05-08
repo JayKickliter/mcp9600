@@ -44,49 +44,35 @@ where
 
     /// Reads the `hot junction` or thermocouple side
     /// ! This will still succeed even if there is no thermocouple connected !
-    pub fn read_hot_junction(&mut self) -> Result<f32, E> {
+    pub fn read_hot_junction(&mut self) -> Result<Temperature, E> {
         let mut data = [0u8, 0u8];
         self.i2c.write_read(
             self.address as u8,
             &[Register::HotJunction as u8],
             &mut data,
         )?;
-        let data = RawTemperature {
-            msb: data[0],
-            lsb: data[1],
-        };
-        let temperature: Temperature = data.into();
-        Ok(temperature.0)
+        Ok(Temperature(data))
     }
 
-    pub fn read_raw_hot_junction(&mut self) -> Result<RawTemperature, E> {
+    pub fn read_raw_hot_junction(&mut self) -> Result<Temperature, E> {
         let mut data = [0u8; 2];
         self.i2c.write_read(
             self.address as u8,
             &[Register::HotJunction as u8],
             &mut data,
         )?;
-        let data = RawTemperature {
-            msb: data[0],
-            lsb: data[1],
-        };
-        Ok(data)
+        Ok(Temperature(data))
     }
     /// Reads the `cold junction` or internal temperature of the
     /// mcp960x chip
-    pub fn read_cold_junction(&mut self) -> Result<f32, E> {
+    pub fn read_cold_junction(&mut self) -> Result<Temperature, E> {
         let mut data = [0u8, 0u8];
         self.i2c.write_read(
             self.address as u8,
             &[Register::ColdJunction as u8],
             &mut data,
         )?;
-        let data = RawTemperature {
-            msb: data[0],
-            lsb: data[1],
-        };
-        let temperature: Temperature = data.into();
-        Ok(temperature.0)
+        Ok(Temperature(data))
     }
 
     /// Reads the raw ADC data. Does no extra processing of the returned data
