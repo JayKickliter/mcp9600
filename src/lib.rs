@@ -38,17 +38,8 @@ where
     /// Writes into a register
     #[allow(unused)]
     fn write_register(&mut self, register: Register, value: u8) -> Result<(), E> {
-        let byte = value as u8;
         self.i2c
-            .write(self.address as u8, &[register.address(), byte])
-    }
-
-    /// Reads a register using the `write_read` method
-    fn read_register(&mut self, register: Register) -> Result<u8, E> {
-        let mut data = [0];
-        self.i2c
-            .write_read(self.address as u8, &[register.address()], &mut data)?;
-        Ok(u8::from_le_bytes(data)) // from_le_bytes converts from little endian
+            .write(self.address as u8, &[register.address(), value])
     }
 
     /// Reads the `hot junction` or thermocouple side
@@ -156,9 +147,9 @@ pub fn sensor_configuration(
     thermocoupletype: ThermocoupleType,
     filtercoefficient: FilterCoefficient,
 ) -> u8 {
-    let configuration: u8 = thermocoupletype as u8 | filtercoefficient as u8;
-    return configuration;
+    thermocoupletype as u8 | filtercoefficient as u8
 }
+
 /// Generates a binary u8 word which contains the necessary device configuration
 pub fn device_configuration(
     coldjunctionresolution: ColdJunctionResolution,
@@ -166,11 +157,7 @@ pub fn device_configuration(
     burstmodesamples: BurstModeSamples,
     shutdownmode: ShutdownMode,
 ) -> u8 {
-    let configuration = coldjunctionresolution as u8
-        | adcresolution as u8
-        | burstmodesamples as u8
-        | shutdownmode as u8;
-    return configuration;
+    coldjunctionresolution as u8 | adcresolution as u8 | burstmodesamples as u8 | shutdownmode as u8
 }
 
 // Enums
