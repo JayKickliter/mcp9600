@@ -10,4 +10,3 @@ categories = ["embedded"]
 
 [dependencies]
 embedded-hal = "0.2.7"
-bitvec = { version = "1", default-features = false }
