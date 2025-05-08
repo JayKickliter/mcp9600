@@ -17,15 +17,17 @@ pub struct MCP9600<I2C> {
     address: DeviceAddr,
 }
 
+impl<I2C> MCP9600<I2C> {
+    /// Creates a new instance of the sensor, taking ownership of the i2c peripheral
+    pub fn new(i2c: I2C, address: DeviceAddr) -> Self {
+        Self { i2c, address }
+    }
+}
+
 impl<I2C, E> MCP9600<I2C>
 where
     I2C: i2c::WriteRead<Error = E> + i2c::Write<Error = E>,
 {
-    /// Creates a new instance of the sensor, taking ownership of the i2c peripheral
-    pub fn new(i2c: I2C, address: DeviceAddr) -> Result<Self, E> {
-        Ok(Self { i2c, address })
-    }
-
     /// Returns the Device's ID
     pub fn read_device_id_register(&mut self) -> Result<[u8; 2], E> {
         let mut data = [0u8, 0u8];
