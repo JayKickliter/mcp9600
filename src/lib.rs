@@ -30,60 +30,56 @@ where
 {
     /// Returns the Device's ID
     pub fn read_device_id_register(&mut self) -> Result<[u8; 2], E> {
-        let mut data = [0u8, 0u8];
+        let tx_buf = [Register::DeviceID as u8];
+        let mut rx_buf = [0u8, 0u8];
         self.i2c
-            .write_read(self.address as u8, &[Register::DeviceID as u8], &mut data)?;
-        Ok(data)
+            .write_read(self.address as u8, &tx_buf, &mut rx_buf)?;
+        Ok(rx_buf)
         // This should return 64 for the MCP9600 and 65 for the MCP9601
     }
 
     /// Writes into a register
     #[allow(unused)]
     fn write_register(&mut self, register: Register, value: u8) -> Result<(), E> {
-        self.i2c
-            .write(self.address as u8, &[register.address(), value])
+        let tx_buf = [register.address(), value];
+        self.i2c.write(self.address as u8, &tx_buf)
     }
 
     /// Reads the `hot junction` or thermocouple side
     /// ! This will still succeed even if there is no thermocouple connected !
     pub fn read_hot_junction(&mut self) -> Result<Temperature, E> {
-        let mut data = [0u8, 0u8];
-        self.i2c.write_read(
-            self.address as u8,
-            &[Register::HotJunction as u8],
-            &mut data,
-        )?;
-        Ok(Temperature(data))
+        let tx_buf = [Register::HotJunction as u8];
+        let mut rx_buf = [0u8, 0u8];
+        self.i2c
+            .write_read(self.address as u8, &tx_buf, &mut rx_buf)?;
+        Ok(Temperature(rx_buf))
     }
 
     pub fn read_raw_hot_junction(&mut self) -> Result<Temperature, E> {
-        let mut data = [0u8; 2];
-        self.i2c.write_read(
-            self.address as u8,
-            &[Register::HotJunction as u8],
-            &mut data,
-        )?;
-        Ok(Temperature(data))
+        let tx_buf = [Register::HotJunction as u8];
+        let mut rx_buf = [0u8; 2];
+        self.i2c
+            .write_read(self.address as u8, &tx_buf, &mut rx_buf)?;
+        Ok(Temperature(rx_buf))
     }
     /// Reads the `cold junction` or internal temperature of the
     /// mcp960x chip
     pub fn read_cold_junction(&mut self) -> Result<Temperature, E> {
-        let mut data = [0u8, 0u8];
-        self.i2c.write_read(
-            self.address as u8,
-            &[Register::ColdJunction as u8],
-            &mut data,
-        )?;
-        Ok(Temperature(data))
+        let tx_buf = [Register::ColdJunction as u8];
+        let mut rx_buf = [0u8, 0u8];
+        self.i2c
+            .write_read(self.address as u8, &tx_buf, &mut rx_buf)?;
+        Ok(Temperature(rx_buf))
     }
 
     /// Reads the raw ADC data. Does no extra processing of the returned data
     /// Note that the data is formatted LSB0
     pub fn read_adc_raw(&mut self) -> Result<[u8; 3], E> {
-        let mut data = [0u8, 0u8, 0u8];
+        let tx_buf = [Register::RawADCData as u8];
+        let mut rx_buf = [0u8, 0u8, 0u8];
         self.i2c
-            .write_read(self.address as u8, &[Register::RawADCData as u8], &mut data)?;
-        Ok(data)
+            .write_read(self.address as u8, &tx_buf, &mut rx_buf)?;
+        Ok(rx_buf)
     }
 
     /// Set the sensor configuration. Requires a thermocouple type, and filter coefficient to be
@@ -94,10 +90,8 @@ where
         filtercoefficient: FilterCoefficient,
     ) -> Result<(), E> {
         let configuration = sensor_configuration(thermocoupletype, filtercoefficient);
-        self.i2c.write(
-            self.address as u8,
-            &[Register::SensorConfiguration as u8, configuration],
-        )
+        let tx_buf = [Register::SensorConfiguration as u8, configuration];
+        self.i2c.write(self.address as u8, &tx_buf)
     }
 
     /// Sets the device configuration. Requires a cold junction resolution
@@ -116,10 +110,8 @@ where
             burstmodesamples,
             shutdownmode,
         );
-        self.i2c.write(
-            self.address as u8,
-            &[Register::DeviceConfiguration as u8, configuration],
-        )
+        let tx_buf = [Register::DeviceConfiguration as u8, configuration];
+        self.i2c.write(self.address as u8, &tx_buf)
     }
 }
 
