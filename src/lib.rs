@@ -17,94 +17,73 @@ pub struct MCP9600<I2C> {
     address: DeviceAddr,
 }
 
+impl<I2C> MCP9600<I2C> {
+    /// Creates a new instance of the sensor, taking ownership of the i2c peripheral
+    pub fn new(i2c: I2C, address: DeviceAddr) -> Self {
+        Self { i2c, address }
+    }
+}
+
 impl<I2C, E> MCP9600<I2C>
 where
     I2C: i2c::WriteRead<Error = E> + i2c::Write<Error = E>,
 {
-    /// Creates a new instance of the sensor, taking ownership of the i2c peripheral
-    pub fn new(i2c: I2C, address: DeviceAddr) -> Result<Self, E> {
-        Ok(Self { i2c, address })
-    }
-
     /// Returns the Device's ID
-    pub fn read_device_id_register(&mut self) -> Result<[u8; 2], E> {
-        let mut data = [0u8, 0u8];
+    ///
+    /// # Returns
+    ///
+    /// - MCP9600: 64
+    /// - MCP9601: 65
+    pub fn read_device_id_register(&mut self) -> Result<u8, E> {
+        let tx_buf = [Register::DeviceID as u8];
+        let mut rx_buf = [0];
         self.i2c
-            .write_read(self.address as u8, &[Register::DeviceID as u8], &mut data)?;
-        Ok(data)
-        // This should return 64 for the MCP9600 and 65 for the MCP9601
+            .write_read(self.address as u8, &tx_buf, &mut rx_buf)?;
+        Ok(rx_buf[0])
     }
 
     /// Writes into a register
     #[allow(unused)]
     fn write_register(&mut self, register: Register, value: u8) -> Result<(), E> {
-        let byte = value as u8;
-        self.i2c
-            .write(self.address as u8, &[register.address(), byte])
-    }
-
-    /// Reads a register using the `write_read` method
-    fn read_register(&mut self, register: Register) -> Result<u8, E> {
-        let mut data = [0];
-        self.i2c
-            .write_read(self.address as u8, &[register.address()], &mut data)?;
-        Ok(u8::from_le_bytes(data)) // from_le_bytes converts from little endian
+        let tx_buf = [register.address(), value];
+        self.i2c.write(self.address as u8, &tx_buf)
     }
 
     /// Reads the `hot junction` or thermocouple side
     /// ! This will still succeed even if there is no thermocouple connected !
-    pub fn read_hot_junction(&mut self) -> Result<f32, E> {
-        let mut data = [0u8, 0u8];
-        self.i2c.write_read(
-            self.address as u8,
-            &[Register::HotJunction as u8],
-            &mut data,
-        )?;
-        let data = RawTemperature {
-            msb: data[0],
-            lsb: data[1],
-        };
-        let temperature: Temperature = data.into();
-        Ok(temperature.0)
+    pub fn read_hot_junction(&mut self) -> Result<Temperature, E> {
+        let tx_buf = [Register::HotJunction as u8];
+        let mut rx_buf = [0u8, 0u8];
+        self.i2c
+            .write_read(self.address as u8, &tx_buf, &mut rx_buf)?;
+        Ok(Temperature(rx_buf))
     }
 
-    pub fn read_raw_hot_junction(&mut self) -> Result<RawTemperature, E> {
-        let mut data = [0u8; 2];
-        self.i2c.write_read(
-            self.address as u8,
-            &[Register::HotJunction as u8],
-            &mut data,
-        )?;
-        let data = RawTemperature {
-            msb: data[0],
-            lsb: data[1],
-        };
-        Ok(data)
+    pub fn read_raw_hot_junction(&mut self) -> Result<Temperature, E> {
+        let tx_buf = [Register::HotJunction as u8];
+        let mut rx_buf = [0u8; 2];
+        self.i2c
+            .write_read(self.address as u8, &tx_buf, &mut rx_buf)?;
+        Ok(Temperature(rx_buf))
     }
     /// Reads the `cold junction` or internal temperature of the
     /// mcp960x chip
-    pub fn read_cold_junction(&mut self) -> Result<f32, E> {
-        let mut data = [0u8, 0u8];
-        self.i2c.write_read(
-            self.address as u8,
-            &[Register::ColdJunction as u8],
-            &mut data,
-        )?;
-        let data = RawTemperature {
-            msb: data[0],
-            lsb: data[1],
-        };
-        let temperature: Temperature = data.into();
-        Ok(temperature.0)
+    pub fn read_cold_junction(&mut self) -> Result<Temperature, E> {
+        let tx_buf = [Register::ColdJunction as u8];
+        let mut rx_buf = [0u8, 0u8];
+        self.i2c
+            .write_read(self.address as u8, &tx_buf, &mut rx_buf)?;
+        Ok(Temperature(rx_buf))
     }
 
     /// Reads the raw ADC data. Does no extra processing of the returned data
     /// Note that the data is formatted LSB0
     pub fn read_adc_raw(&mut self) -> Result<[u8; 3], E> {
-        let mut data = [0u8, 0u8, 0u8];
+        let tx_buf = [Register::RawADCData as u8];
+        let mut rx_buf = [0u8, 0u8, 0u8];
         self.i2c
-            .write_read(self.address as u8, &[Register::RawADCData as u8], &mut data)?;
-        Ok(data)
+            .write_read(self.address as u8, &tx_buf, &mut rx_buf)?;
+        Ok(rx_buf)
     }
 
     /// Set the sensor configuration. Requires a thermocouple type, and filter coefficient to be
@@ -115,10 +94,8 @@ where
         filtercoefficient: FilterCoefficient,
     ) -> Result<(), E> {
         let configuration = sensor_configuration(thermocoupletype, filtercoefficient);
-        self.i2c.write(
-            self.address as u8,
-            &[Register::SensorConfiguration as u8, configuration],
-        )
+        let tx_buf = [Register::SensorConfiguration as u8, configuration];
+        self.i2c.write(self.address as u8, &tx_buf)
     }
 
     /// Sets the device configuration. Requires a cold junction resolution
@@ -137,10 +114,8 @@ where
             burstmodesamples,
             shutdownmode,
         );
-        self.i2c.write(
-            self.address as u8,
-            &[Register::DeviceConfiguration as u8, configuration],
-        )
+        let tx_buf = [Register::DeviceConfiguration as u8, configuration];
+        self.i2c.write(self.address as u8, &tx_buf)
     }
 }
 
@@ -156,9 +131,9 @@ pub fn sensor_configuration(
     thermocoupletype: ThermocoupleType,
     filtercoefficient: FilterCoefficient,
 ) -> u8 {
-    let configuration: u8 = thermocoupletype as u8 | filtercoefficient as u8;
-    return configuration;
+    thermocoupletype as u8 | filtercoefficient as u8
 }
+
 /// Generates a binary u8 word which contains the necessary device configuration
 pub fn device_configuration(
     coldjunctionresolution: ColdJunctionResolution,
@@ -166,11 +141,7 @@ pub fn device_configuration(
     burstmodesamples: BurstModeSamples,
     shutdownmode: ShutdownMode,
 ) -> u8 {
-    let configuration = coldjunctionresolution as u8
-        | adcresolution as u8
-        | burstmodesamples as u8
-        | shutdownmode as u8;
-    return configuration;
+    coldjunctionresolution as u8 | adcresolution as u8 | burstmodesamples as u8 | shutdownmode as u8
 }
 
 // Enums
