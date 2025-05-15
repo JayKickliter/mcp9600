@@ -29,13 +29,17 @@ where
     I2C: i2c::WriteRead<Error = E> + i2c::Write<Error = E>,
 {
     /// Returns the Device's ID
-    pub fn read_device_id_register(&mut self) -> Result<[u8; 2], E> {
+    ///
+    /// # Returns
+    ///
+    /// - MCP9600: 64
+    /// - MCP9601: 65
+    pub fn read_device_id_register(&mut self) -> Result<u8, E> {
         let tx_buf = [Register::DeviceID as u8];
-        let mut rx_buf = [0u8, 0u8];
+        let mut rx_buf = [0];
         self.i2c
             .write_read(self.address as u8, &tx_buf, &mut rx_buf)?;
-        Ok(rx_buf)
-        // This should return 64 for the MCP9600 and 65 for the MCP9601
+        Ok(rx_buf[0])
     }
 
     /// Writes into a register
